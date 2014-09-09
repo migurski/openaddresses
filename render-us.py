@@ -125,11 +125,16 @@ if __name__ == '__main__':
     nation_features = list(nation_ds.GetLayer(0))
     state_features = list(state_ds.GetLayer(0))
     county_features = list(county_ds.GetLayer(0))
+    data_states = [f for f in state_features if f.GetFieldAsString('GEOID') in geoids]
     data_counties = [f for f in county_features if f.GetFieldAsString('GEOID') in geoids]
 
     # Fill nation background
     context.set_source_rgb(0xdd/0xff, 0xdd/0xff, 0xdd/0xff)
     fill_features(context, nation_features)
+
+    # Fill populated states
+    context.set_source_rgb(0x74/0xff, 0xA5/0xff, 0x78/0xff)
+    fill_features(context, data_states)
 
     # Fill populated counties
     context.set_source_rgb(0x1C/0xff, 0x89/0xff, 0x3F/0xff)

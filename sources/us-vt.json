@@ -1,5 +1,6 @@
 {
     "coverage": {
+        "US Census": {"geoid": "50", "state": "Vermont"},
         "country": "us",
         "state": "vt"
     },

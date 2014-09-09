@@ -1,5 +1,6 @@
 {
     "coverage": {
+        "US Census": {"geoid": "36", "state": "New York"},
         "country": "us",
         "state": "ny"
     },
