@@ -3,6 +3,7 @@ from __future__ import division
 
 from glob import glob
 from argparse import ArgumentParser
+from itertools import combinations
 from os.path import join
 import json
 
@@ -51,18 +52,26 @@ def load_geoids(directory='sources'):
 def stroke_features(ctx, features):
     '''
     '''
-    for feature in features:
-        geometry = feature.GetGeometryRef()
+    return stroke_geometries(ctx, [f.GetGeometryRef() for f in features])
     
-        if geometry.GetGeometryType() == ogr.wkbMultiPolygon:
+def stroke_geometries(ctx, geometries):
+    '''
+    '''
+    for geometry in geometries:
+        if geometry.GetGeometryType() in (ogr.wkbMultiPolygon, ogr.wkbMultiLineString):
             parts = geometry
-        elif geometry.GetGeometryType() == ogr.wkbPolygon:
+        elif geometry.GetGeometryType() in (ogr.wkbPolygon, ogr.wkbLineString):
             parts = [geometry]
         else:
-            raise NotImplementedError()
+            continue
 
         for part in parts:
-            for ring in part:
+            if part.GetGeometryType() is ogr.wkbPolygon:
+                rings = part
+            else:
+                rings = [part]
+
+            for ring in rings:
                 points = ring.GetPoints()
                 ctx.move_to(*points[-1])
             
@@ -127,7 +136,12 @@ if __name__ == '__main__':
     county_features = list(county_ds.GetLayer(0))
     data_states = [f for f in state_features if f.GetFieldAsString('GEOID') in geoids]
     data_counties = [f for f in county_features if f.GetFieldAsString('GEOID') in geoids]
-
+    
+    # Draw each border between neighboring states exactly once.
+    state_borders = [s1.GetGeometryRef().Intersection(s2.GetGeometryRef())
+                     for (s1, s2) in combinations(state_features, 2)
+                     if s1.GetGeometryRef().Intersects(s2.GetGeometryRef())]
+    
     # Fill nation background
     context.set_source_rgb(0xdd/0xff, 0xdd/0xff, 0xdd/0xff)
     fill_features(context, nation_features)
@@ -143,7 +157,7 @@ if __name__ == '__main__':
     # Outline states and nation
     context.set_source_rgb(0, 0, 0)
     context.set_line_width(.5 * args.resolution / scale)
-    stroke_features(context, state_features)
+    stroke_geometries(context, state_borders)
     context.set_line_width(1 * args.resolution / scale)
     stroke_features(context, nation_features)
 
